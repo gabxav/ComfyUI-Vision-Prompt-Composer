@@ -30,6 +30,10 @@ Specify reference roles in your request. Connecting two images does not automati
 
 ## Workflow example
 
+[Download the example workflow JSON](https://raw.githubusercontent.com/gabxav/ComfyUI-Vision-Prompt-Composer/main/workflows/minimax_prompt_creator_example.json), then drag it into ComfyUI or open it from the workflow menu.
+
+Select your installed Qwen3.8 model in `Load CLIP` and choose your own reference image in `Load Image`. Model weights and the screenshot's reference image are not included. Edit `User Prompt` to describe your scene; connect additional `Load Image` nodes to `image_2` through `image_8` when needed.
+
 This example connects a reference image, system instructions and a user prompt to Vision Prompt Composer, then displays the generated description in a text preview.
 
 ![Vision Prompt Composer workflow with a reference image and generated prompt](docs/assets/workflow-example.png)
