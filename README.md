@@ -30,6 +30,8 @@ Specify reference roles in your request. Connecting two images does not automati
 
 ## Workflow example
 
+**The included example is configured for MiniMax H3, but Vision Prompt Composer is not limited to it.** To write prompts for any other image or video generation model, replace the `System Prompt` with that model's prompting instructions and adapt the `User Prompt` to your request. The node's output is plain text, so it does not require an integration with the target generation model. The vision-language model used to analyze the reference images remains configured separately in `Load CLIP`.
+
 [Download the example workflow JSON](https://raw.githubusercontent.com/gabxav/ComfyUI-Vision-Prompt-Composer/main/workflows/minimax_prompt_creator_example.json), then drag it into ComfyUI or open it from the workflow menu.
 
 Select your installed Qwen3.8 model in `Load CLIP` and choose your own reference image in `Load Image`. Model weights and the screenshot's reference image are not included. Edit `User Prompt` to describe your scene; connect additional `Load Image` nodes to `image_2` through `image_8` when needed.
