@@ -2,6 +2,8 @@
 
 A ComfyUI custom node that generates one text from multiple visual references. It reuses the native `Generate Text` generation logic and sampling schema, replacing its single `image` input with eight optional inputs: `image_1` through `image_8`.
 
+**Works with Qwen3.8.** Tested with Qwen3.8 27B to analyze multiple images together and write a single prompt grounded in those references.
+
 ![Vision Prompt Composer with eight image inputs](docs/assets/node.png)
 
 ## Usage
@@ -34,6 +36,7 @@ This example connects a reference image, system instructions and a user prompt t
 
 ## Compatibility
 
+- **Tested model:** Qwen3.8 27B (`qwen3.8_27b_uncensored_w4a8_convrot.safetensors`), loaded through the native `CLIPLoader` with `type=krea2` and `device=default` in ComfyUI 0.34.5. A real generation correctly identified two different images in one response.
 - Designed for a Qwen vision CLIP that supports `images=[...]`; validated with the Qwen tokenizer in ComfyUI 0.34.5.
 - Preserves `max_length`, sampling on/off, temperature, top-k/p, min-p, penalties, seed, thinking and template settings from the native node.
 - Without images, delegates directly to the native node.
