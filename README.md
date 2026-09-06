@@ -26,6 +26,12 @@ Audio: quiet ambience, no music, no dialogue.
 
 Specify reference roles in your request. Connecting two images does not automatically assign first-frame and last-frame roles. For FL2VA, state these roles explicitly.
 
+## Workflow example
+
+This example connects a reference image, system instructions and a user prompt to Vision Prompt Composer, then displays the generated description in a text preview.
+
+![Vision Prompt Composer workflow with a reference image and generated prompt](docs/assets/workflow-example.png)
+
 ## Compatibility
 
 - Designed for a Qwen vision CLIP that supports `images=[...]`; validated with the Qwen tokenizer in ComfyUI 0.34.5.
