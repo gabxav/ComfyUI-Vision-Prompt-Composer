@@ -1,17 +1,19 @@
 # Vision Prompt Composer
 
-Custom node para ComfyUI que gera um único texto usando várias referências visuais. Reutiliza a geração e o schema de amostragem do `Generate Text` nativo, substituindo a entrada `image` por oito entradas opcionais, `image_1` a `image_8`.
+A ComfyUI custom node that generates one text from multiple visual references. It reuses the native `Generate Text` generation logic and sampling schema, replacing its single `image` input with eight optional inputs: `image_1` through `image_8`.
 
-## Uso
+![Vision Prompt Composer with eight image inputs](docs/assets/node.png)
 
-1. Conecte o `CLIPLoader` a `clip` e seu texto a `prompt`.
-2. Conecte cada `Load Image` a uma entrada de imagem.
-3. Conecte `generated_text` ao preview ou ao consumidor do prompt.
-4. Execute o workflow. O modelo recebe todas as imagens em uma única chamada.
+## Usage
 
-Não precisa conectar todas as entradas. A numeração `<Picture N>` segue a ordem das entradas conectadas, pulando as vazias. Por exemplo, `image_1` e `image_3` tornam-se `<Picture 1>` e `<Picture 2>`. Em batches, cada item recebe seu próprio número antes de passar à próxima entrada. As imagens mantêm suas dimensões até o pré-processamento nativo do modelo; não são concatenadas, redimensionadas pelo node nem transformadas em colagem.
+1. Connect `CLIPLoader` to `clip` and your text to `prompt`.
+2. Connect each `Load Image` node to an image input.
+3. Connect `generated_text` to a preview or the node that consumes your prompt.
+4. Run the workflow. The model receives all images in one generation call.
 
-Exemplo de pedido:
+You do not need to connect every input. `<Picture N>` numbering follows connected input order, skipping empty inputs. For example, `image_1` and `image_3` become `<Picture 1>` and `<Picture 2>`. For batches, each item receives its own number before moving to the next input. Images retain their dimensions until the model's native preprocessing; this node does not concatenate, resize or combine them into a collage.
+
+Example request:
 
 ```text
 Mode: Ref2VA
@@ -22,39 +24,43 @@ Camera: medium shot, static camera.
 Audio: quiet ambience, no music, no dialogue.
 ```
 
-Os papéis das referências devem ser informados no pedido. Conectar duas imagens não determina automaticamente primeiro e último frames. Para FL2VA, declare esses papéis explicitamente.
+Specify reference roles in your request. Connecting two images does not automatically assign first-frame and last-frame roles. For FL2VA, state these roles explicitly.
 
-## Compatibilidade
+## Compatibility
 
-- Desenvolvido para o CLIP visual Qwen com suporte a `images=[...]`; validado no tokenizer Qwen usado pelo ambiente ComfyUI 0.34.5.
-- Preserva `max_length`, sampling on/off, temperatura, top-k/p, min-p, penalidades, seed, thinking e template do node nativo.
-- Sem imagens, delega diretamente ao node nativo.
-- Os sockets de vídeo e áudio do original são preservados; suporte efetivo depende do modelo. A validação multimodal deste projeto cobre imagens.
-- Verifica quantidade e ordem dos payloads visuais antes da geração. Um modelo/template que ignore imagens produz um erro claro em vez de uma descrição sem acesso às referências.
-- Templates manuais precisam conter um placeholder visual nativo por imagem. O template padrão é recomendado.
-- A capacidade total de referências depende da memória e do contexto do modelo. Oito sockets não impõem um limite de oito frames em batches.
+- Designed for a Qwen vision CLIP that supports `images=[...]`; validated with the Qwen tokenizer in ComfyUI 0.34.5.
+- Preserves `max_length`, sampling on/off, temperature, top-k/p, min-p, penalties, seed, thinking and template settings from the native node.
+- Without images, delegates directly to the native node.
+- Preserves the original video and audio inputs; actual support depends on the model. This project's multimodal validation covers images.
+- Checks visual payload count and order before generation. A model or template that ignores images produces a clear error instead of a description without access to the references.
+- Custom templates need one native visual placeholder per image. The default template is recommended.
+- Total reference capacity depends on model memory and context limits. Eight inputs do not impose an eight-frame limit on batches.
 
-## Instalação e testes
+## Installation and tests
 
-Na pasta `ComfyUI/custom_nodes`, execute:
+From the `ComfyUI/custom_nodes` directory, run:
 
 ```sh
 git clone https://github.com/gabxav/ComfyUI-Vision-Prompt-Composer.git
 ```
 
-Reinicie o ComfyUI com a fila vazia e atualize o navegador. Procure **Vision Prompt Composer** na categoria `text`. Não há dependências adicionais às do ComfyUI.
+Wait for the queue to finish, restart ComfyUI and refresh your browser. Find **Vision Prompt Composer** in the `text` category. No additional dependencies are required beyond ComfyUI.
 
-Se já instalou a versão anterior em `ComfyUI-MultiImage-Text`, substitua essa pasta pela nova instalação; não mantenha as duas cópias. O identificador interno `TextGenerateMultiImage` foi preservado para compatibilidade com os workflows existentes.
+If you installed the earlier version in `ComfyUI-MultiImage-Text`, replace that directory with the new installation; do not keep both copies. The internal ID `TextGenerateMultiImage` is preserved for compatibility with existing workflows.
 
-Na pasta raiz do ComfyUI, usando seu ambiente Python:
+From the ComfyUI root directory, using its Python environment:
 
 ```sh
 python custom_nodes/ComfyUI-Vision-Prompt-Composer/test_nodes.py --cpu
 ```
 
-Os testes usam o tokenizer real sem carregar pesos do modelo. Cobrem sockets vazios, resoluções distintas, todos os oito sockets, batches, perda de imagens em templates manuais, passagem dos controles de sampling, texto sem imagens e tensors inválidos.
+The tests use the real tokenizer without loading model weights. They cover empty inputs, different image sizes, all eight inputs, batches, missing images in custom templates, sampling parameter passthrough, text-only generation and invalid tensors.
 
-## Fontes
+## Contributing
 
-- [Generate Text nativo](https://github.com/Comfy-Org/ComfyUI/blob/master/comfy_extras/nodes_textgen.py)
-- [Tokenizer visual Qwen](https://github.com/Comfy-Org/ComfyUI/blob/master/comfy/text_encoders/qwen35.py)
+Use English for all repository documentation, code, comments, identifiers, interface labels, messages, examples and screenshots. See [AGENTS.md](AGENTS.md). User-provided prompts and dialogue may use any language and must remain unchanged.
+
+## Sources
+
+- [Native Generate Text](https://github.com/Comfy-Org/ComfyUI/blob/master/comfy_extras/nodes_textgen.py)
+- [Qwen vision tokenizer](https://github.com/Comfy-Org/ComfyUI/blob/master/comfy/text_encoders/qwen35.py)
