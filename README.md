@@ -28,6 +28,12 @@ Audio: quiet ambience, no music, no dialogue.
 
 Specify reference roles in your request. Connecting two images does not automatically assign first-frame and last-frame roles. For FL2VA, state these roles explicitly.
 
+### Thinking output
+
+With `thinking=true`, generation still uses the model's reasoning mode, but `generated_text` contains only the final answer. The Composer decodes with special tokens preserved, extracts the answer after Qwen's `</think>` boundary, and removes Qwen turn-ending tokens. H3 tags, reference labels and dialogue remain intact.
+
+If reasoning is unfinished, the final answer is empty, or a thinking-enabled model returns no recognizable boundary, the node raises an error instead of forwarding reasoning. Increase `max_length` for truncated reasoning; check the model/template if the boundary remains absent. This extraction supports Qwen `<think>` / `</think>` output, including a template-prefilled opening tag. Other reasoning formats are not inferred from ordinary prose. It does not validate whether the final answer itself is complete or follows every scene instruction.
+
 ## Workflow example
 
 **The included example is configured for MiniMax H3, but Vision Prompt Composer is not limited to it.** To write prompts for any other image or video generation model, replace the `System Prompt` with that model's prompting instructions and adapt the `User Prompt` to your request. The node's output is plain text, so it does not require an integration with the target generation model. The vision-language model used to analyze the reference images remains configured separately in `Load CLIP`.
@@ -45,7 +51,7 @@ This example connects a reference image, system instructions and a user prompt t
 - **Tested model:** Qwen3.8 27B (`qwen3.8_27b_uncensored_w4a8_convrot.safetensors`), loaded through the native `CLIPLoader` with `type=krea2` and `device=default` in ComfyUI 0.34.5. A real generation correctly identified two different images in one response.
 - Designed for a Qwen vision CLIP that supports `images=[...]`; validated with the Qwen tokenizer in ComfyUI 0.34.5.
 - Preserves `max_length`, sampling on/off, temperature, top-k/p, min-p, penalties, seed, thinking and template settings from the native node.
-- Without images, delegates directly to the native node.
+- With or without images, preserves native generation and filters reasoning during decoding.
 - Preserves the original video and audio inputs; actual support depends on the model. This project's multimodal validation covers images.
 - Checks visual payload count and order before generation. A model or template that ignores images produces a clear error instead of a description without access to the references.
 - Custom templates need one native visual placeholder per image. The default template is recommended.
@@ -69,7 +75,7 @@ From the ComfyUI root directory, using its Python environment:
 python custom_nodes/ComfyUI-Vision-Prompt-Composer/test_nodes.py --cpu
 ```
 
-The tests use the real tokenizer without loading model weights. They cover empty inputs, different image sizes, all eight inputs, batches, missing images in custom templates, sampling parameter passthrough, text-only generation and invalid tensors.
+The tests use the real tokenizer without loading model weights. They cover empty inputs, different image sizes, all eight inputs, batches, missing images in custom templates, sampling parameter passthrough, text-only generation, invalid tensors, reasoning boundaries, truncated reasoning and preservation of Portuguese dialogue and H3 tags.
 
 ## Contributing
 

@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path.cwd()))
 sys.path.insert(0, str(Path(__file__).parent))
 import torch
-from nodes import TextGenerateMultiImage, MultiImageClip, collect_images, image_payloads
+from nodes import TextGenerateMultiImage, MultiImageClip, collect_images, image_payloads, final_answer
 from comfy.text_encoders.qwen35 import Qwen35ImageTokenizer
 
 
@@ -22,8 +22,11 @@ class Clip:
         self.tokens, self.sampling = tokens, kwargs
         return [1]
 
-    def decode(self, ids):
-        return "generated text"
+    def decode(self, ids, skip_special_tokens=True):
+        text = getattr(self, "output", "generated text")
+        if skip_special_tokens:
+            return text.replace("<think>", "").replace("</think>", "")
+        return text
 
 
 class MultiImageTests(unittest.TestCase):
@@ -81,6 +84,46 @@ class MultiImageTests(unittest.TestCase):
         for shape in [(0, 32, 32, 3), (1, 32, 32, 4), (32, 32, 3)]:
             with self.assertRaisesRegex(ValueError, "image_1"):
                 collect_images({"image_1": torch.zeros(*shape)})
+
+    def test_thinking_generation_preserves_sampling_images_and_dialogue(self):
+        clip = Clip()
+        expected = '<Subject 1> (S1) says: <d>[Portuguese] olha isso</d>'
+        clip.output = '<think>private planning</think>\n' + expected + '<|im_end|>'
+        result = TextGenerateMultiImage.execute(
+            clip, "Request", 100, {"sampling_mode": "off"}, thinking=True,
+            image_1=torch.zeros(1, 32, 32, 3),
+        )
+        self.assertEqual(result.args[0], expected)
+        self.assertEqual(len(list(image_payloads(clip.tokens))), 1)
+        self.assertFalse(clip.sampling["do_sample"])
+
+    def test_incomplete_thinking_never_reaches_output(self):
+        clip = Clip()
+        clip.output = '<think>unfinished planning'
+        with self.assertRaisesRegex(ValueError, "No completed thinking boundary"):
+            TextGenerateMultiImage.execute(
+                clip, "Request", 10, {"sampling_mode": "off"}, thinking=True,
+            )
+
+
+class FinalAnswerTests(unittest.TestCase):
+    def test_complete_and_prefilled_reasoning(self):
+        for raw in ['<think>planning</think>\nFinal', 'planning</think>\nFinal',
+                    '<think>\n</think>Final<|im_end|><|endoftext|>']:
+            with self.subTest(raw=raw):
+                self.assertEqual(final_answer(raw, thinking=True), 'Final')
+
+    def test_unexpected_reasoning_when_disabled(self):
+        self.assertEqual(final_answer('<think>planning</think>Final'), 'Final')
+
+    def test_missing_empty_and_truncated_final_are_errors(self):
+        for raw in ['<think>unfinished', 'unmarked planning', '<think>x</think>',
+                    '<think>x</think><|im_end|>', '<think>x</think>Final<think>unfinished']:
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                final_answer(raw, thinking=True)
+
+    def test_additional_reasoning_block(self):
+        self.assertEqual(final_answer('<think>x</think>A<think>y</think>B'), 'AB')
 
 
 if __name__ == "__main__":

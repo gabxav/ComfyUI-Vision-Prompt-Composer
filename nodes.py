@@ -1,7 +1,52 @@
 """Multiple separate visual references for ComfyUI's native text generator."""
 
+import re
+
 from comfy_api.latest import ComfyExtension, io
 from comfy_extras.nodes_textgen import TextGenerate
+
+
+def final_answer(text, thinking=False):
+    """Extract Qwen's final channel before special-token decoding loses it."""
+    if "</think>" in text:
+        # The opening tag may be part of a custom template rather than output.
+        text = text.split("</think>", 1)[1]
+        while "<think>" in text:
+            start = text.index("<think>")
+            end = text.find("</think>", start)
+            if end < 0:
+                raise ValueError("Thinking output is incomplete. Increase max_length and retry.")
+            text = text[:start] + text[end + len("</think>"):]
+        if "</think>" in text:
+            raise ValueError("Malformed thinking output: the final answer cannot be isolated.")
+    elif thinking or "<think>" in text:
+        raise ValueError(
+            "No completed thinking boundary was generated. Increase max_length or "
+            "check the model's thinking template; no reasoning was forwarded."
+        )
+    # Keep H3 tags, references and user dialogue intact; remove only Qwen turn endings.
+    text = re.sub(r"(?:\s*<\|(?:im_end|endoftext)\|>)+\s*$", "", text).strip()
+    if not text:
+        raise ValueError("The model produced no final answer. Increase max_length and retry.")
+    return text
+
+
+class FinalAnswerClip:
+    """Keep native generation, but isolate reasoning during output decoding."""
+
+    def __init__(self, clip, thinking):
+        self.clip = clip
+        self.thinking = thinking
+
+    def __getattr__(self, name):
+        return getattr(self.clip, name)
+
+    def decode(self, ids, **kwargs):
+        raw = self.clip.decode(ids, skip_special_tokens=False)
+        if self.thinking or "<think>" in raw or "</think>" in raw:
+            return final_answer(raw, thinking=self.thinking)
+        # Non-thinking outputs preserve the native decoder's exact behavior.
+        return self.clip.decode(ids, **kwargs)
 
 
 def collect_images(inputs):
@@ -107,7 +152,7 @@ class TextGenerateMultiImage(TextGenerate):
             )
             clip = MultiImageClip(clip, images)
         return super().execute(
-            clip, prompt, max_length, sampling_mode, thinking=thinking,
+            FinalAnswerClip(clip, thinking), prompt, max_length, sampling_mode, thinking=thinking,
             use_default_template=use_default_template, video=video, audio=audio,
         )
 
