@@ -132,7 +132,7 @@ class TextGenerateMultiImage(TextGenerate):
                 "References are numbered <Picture N> in connected-input order. "
                 "All batch items are included without resizing or creating a collage."
             ),
-            search_aliases=["LLM", "Qwen", "MiniMax", "multiple images", "Generate Text", "Multi Image"],
+            search_aliases=["xavierlab", "LLM", "Qwen", "MiniMax", "multiple images", "Generate Text", "Multi Image"],
             inputs=inputs,
             outputs=parent.outputs,
         )
